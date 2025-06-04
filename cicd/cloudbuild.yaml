@@ -1,30 +1,37 @@
+substitutions:
+  _REGION: europe-west1
+  _CLUSTER_NAME: boutique-cluster
+  _NAMESPACE: default
+
 steps:
+# 1. Build Docker image
 - name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', 'gcr.io/$PROJECT_ID/frontend:$COMMIT_SHA', './src/frontend']
 
+# 2. Push image to Artifact Registry
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/$PROJECT_ID/frontend:$COMMIT_SHA']
 
-- name: 'gcr.io/gcp-runtimes/container-analysis'
-  args: ['signed', 'build', 'gcr.io/$PROJECT_ID/frontend:$COMMIT_SHA']
-
+# 3. Authenticate with GKE
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  entrypoint: bash
+  entrypoint: 'bash'
   args:
     - '-c'
     - |
-      git clone https://github.com/$_REPO_NAME.git
-      cd $REPO_NAME/k8s-manifests
-      sed -i "s|newTag:.*|newTag: '$COMMIT_SHA'|g" frontend-deployment.yaml
-      git config --global user.email "cloudbuild@$PROJECT_ID.iam.gserviceaccount.com"
-      git config --global user.name "Cloud Build"
-      git commit -am "Update frontend to $COMMIT_SHA"
-      git push origin main
+      gcloud container clusters get-credentials $_CLUSTER_NAME --region $_REGION
 
+# 4. Update Kubernetes manifest with new image tag
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  entrypoint: bash
+  entrypoint: 'bash'
   args:
     - '-c'
     - |
-      gcloud container clusters get-credentials $CLUSTER_NAME --region $_REGION
-      kubectl apply -f k8s-manifests/
+      sed -i "s|image:.*frontend.*|image: gcr.io/$PROJECT_ID/frontend:$COMMIT_SHA|g" gcp-microservices-platform/k8s-manifests/overlays/prod/microservices-demo.yaml
+
+# 5. Deploy to GKE
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      kubectl apply -n $_NAMESPACE -f gcp-microservices-platform/k8s-manifests/overlays/prod/microservices-demo.yaml
