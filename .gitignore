@@ -1,0 +1,21 @@
+# .gitignore
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Node/npm
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs & Env
+*.log
+.env
+
+# Docker
+*.tar

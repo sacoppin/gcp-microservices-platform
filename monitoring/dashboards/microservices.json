@@ -1,0 +1,27 @@
+{
+  "title": "Microservices Performance",
+  "panels": [
+    {
+      "type": "graph",
+      "title": "Checkout Latency",
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(checkoutservice_duration_seconds_bucket[5m])) by (le)",
+          "legendFormat": "P95"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Error Rates",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status_code=~\"5..\"}[5m])) by (service)",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    }
+  ]
+}
