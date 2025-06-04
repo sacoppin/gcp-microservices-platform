@@ -1,138 +1,180 @@
-# GCP Microservices Platform
+GCP Microservices Platform
+This project deploys an online boutique microservices application on Google Cloud Platform with a complete DevOps infrastructure. 🚀
 
-Ce projet déploie une boutique en ligne microservices sur GCP avec une infrastructure DevOps complète.
+🧠 Project Goal
+Deploy a microservices application on Google Cloud Platform (GCP) with:
 
+Infrastructure-as-Code using Terraform
 
-🧠 Objectif général
-Tu vas déployer une application microservices sur Google Cloud Platform (GCP), avec :
+GKE (Google Kubernetes Engine) cluster
 
-Infrastructure créée via Terraform
+Kubernetes services (YAML + Kustomize)
 
-Cluster GKE (Google Kubernetes Engine)
+CI/CD pipeline with Cloud Build
 
-Services Kubernetes (YAML + Kustomize)
+Monitoring using Prometheus/Grafana
 
-CI/CD avec Cloud Build
+🛠️ Step 0 - Local Environment Prerequisites
+Ensure you have these tools installed:
 
-Monitoring avec Prometheus/Grafana
-
-🛠️ Étape 0 — Prérequis sur ton environnement local
-Assure-toi d'avoir installé :
-
-Outil	Commande de vérification
+Tool	Verification Command
 Terraform	terraform version
 Google SDK (gcloud)	gcloud version
 kubectl	kubectl version --client
-Docker (facultatif mais utile)	docker version
-Un compte GCP avec un projet actif	gcloud projects list
+Docker	docker version
+GCP Account Requirements:
 
-📦 Étape 1 — Décompresser le projet
+Active Google Cloud account
+
+GCP project with billing enabled
+
+Owner/Editor permissions on the project
+
+📦 Step 1 - Extract Project Files
 bash
-Copy
-Edit
 unzip gcp-microservices-platform.zip
 cd gcp-microservices-platform
-☁️ Étape 2 — Authentification et config GCP
-1. Connecte-toi à ton compte :
+☁️ Step 2 - GCP Authentication & Configuration
+Authenticate to your Google account:
+
 bash
-Copy
-Edit
 gcloud auth login
-2. Configure le projet (remplace your-project-id) :
+Configure your GCP project (replace your-project-id):
+
 bash
-Copy
-Edit
 gcloud config set project your-project-id
-3. Active les APIs nécessaires :
+Enable required APIs:
+
 bash
-Copy
-Edit
 gcloud services enable container.googleapis.com \
     compute.googleapis.com \
     cloudbuild.googleapis.com \
     monitoring.googleapis.com \
     logging.googleapis.com \
     artifactregistry.googleapis.com
-🌐 Étape 3 — Déployer l'infrastructure avec Terraform
-1. Aller dans l’environnement de production :
+🌐 Step 3 - Deploy Infrastructure with Terraform
+Navigate to production environment:
+
 bash
-Copy
-Edit
 cd terraform/environments/prod
-2. Initialiser Terraform :
+Initialize Terraform:
+
 bash
-Copy
-Edit
 terraform init
-3. Lancer un plan pour voir ce qui sera créé :
+Preview infrastructure changes:
+
 bash
-Copy
-Edit
 terraform plan
-4. Appliquer l’infrastructure (confirme avec yes) :
+Apply infrastructure (confirm with "yes"):
+
 bash
-Copy
-Edit
 terraform apply
-👉 Cela va créer :
+✅ This will create:
 
-Un réseau VPC
+VPC network
 
-Un cluster Kubernetes privé (GKE)
+Private Kubernetes cluster (GKE)
 
-Un sous-réseau pour pods et services
+Pod and service subnets
 
-Un node pool avec nœuds Spot pour économiser
+Spot node pool for cost savings
 
-🚀 Étape 4 — Déployer l'application sur GKE
-1. Récupérer les identifiants du cluster :
+Cloud SQL database instance
+
+GCS bucket for Terraform state
+
+🚀 Step 4 - Deploy Application to GKE
+Configure cluster credentials:
+
 bash
-Copy
-Edit
 gcloud container clusters get-credentials boutique-cluster --region us-central1
-2. Appliquer les manifests K8s (base) :
-bash
-Copy
-Edit
-kubectl apply -k k8s-manifests/overlays/prod
-🔄 Étape 5 — CI/CD avec Cloud Build
-Si tu veux tester le pipeline CI/CD :
-
-Active Cloud Build dans GCP Console
-
-Connecte ton repo GitHub contenant ce projet
-
-Déclenche un commit pour voir Cloud Build builder l’image et déployer
-
-Sinon, tu peux manuellement build/push comme dans cloudbuild.yaml.
-
-📊 Étape 6 — Monitoring avec Grafana/Prometheus
-1. Installer Prometheus et Grafana (si pas déjà fait) :
-Tu peux utiliser un Helm chart ou kube-prometheus-stack.
-
-Ou tu peux ajouter un monitoring-stack.yaml que je peux te générer.
-
-2. Importer le dashboard monitoring/dashboards/microservices.json dans Grafana
-🧪 Étape 7 — Tester l’app
-Expose le service frontend via un LoadBalancer ou port-forward :
+Apply Kubernetes manifests:
 
 bash
-Copy
-Edit
+kubectl apply -k ../k8s-manifests/overlays/prod
+Verify deployment:
+
+bash
+kubectl get pods -n boutique
+🔄 Step 5 - CI/CD with Cloud Build
+To set up the CI/CD pipeline:
+
+Connect your GitHub repository to Cloud Build
+
+Create a build trigger using the cicd/cloudbuild.yaml file
+
+Push changes to trigger automatic builds
+
+Manual test (optional):
+
+bash
+gcloud builds submit --config cicd/cloudbuild.yaml
+📊 Step 6 - Monitoring with Grafana/Prometheus
+Install monitoring stack:
+
+bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install prometheus prometheus-community/kube-prometheus-stack
+Access Grafana:
+
+bash
+kubectl port-forward svc/prometheus-grafana 3000:80
+Visit http://localhost:3000 (admin/prom-operator)
+
+Import dashboard from monitoring/dashboards/microservices.json
+
+🧪 Step 7 - Test the Application
+Access the frontend:
+
+bash
 kubectl port-forward service/frontend 8080:80
-Puis va sur http://localhost:8080
+Visit http://localhost:8080
 
-🧹 Étape 8 — Nettoyer (optionnel)
+OR expose via LoadBalancer:
+
 bash
-Copy
-Edit
+kubectl expose deployment frontend --type=LoadBalancer --name=frontend-lb
+kubectl get service frontend-lb
+🧹 Step 8 - Clean Up Resources
+To destroy all created resources:
+
+bash
 cd terraform/environments/prod
 terraform destroy
-❓ Tu veux aller plus loin ?
-Ajouter ELK (Elasticsearch + Kibana) pour logs
+🚀 Going Further
+Log Management:
 
-Intégrer Splunk (dans une version gratuite limitée)
+Add ELK stack (Elasticsearch + Logstash + Kibana)
 
-Mettre Argo CD à la place de kubectl apply
+Integrate with Cloud Logging
 
-Ajouter Sentry, Istio, ou des tests de résilience
+Service Mesh:
+
+bash
+istioctl install --set profile=demo -y
+Advanced CI/CD:
+
+Implement Argo CD for GitOps deployments
+
+Add automated canary releases
+
+Resilience Testing:
+
+Integrate Chaos Mesh for failure injection
+
+bash
+kubectl apply -f https://mirrors.chaos-mesh.org/latest/install.sh
+Security Enhancements:
+
+Enable Binary Authorization
+
+Add Cloud Armor WAF rules
+
+Implement VPC Service Controls
+
+📚 Learning Resources
+GKE Best Practices
+
+Terraform GCP Modules
+
+Kubernetes Patterns
